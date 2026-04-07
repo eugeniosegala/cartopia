@@ -4,6 +4,14 @@ Convert photos of physical books into clean, structured digital Word documents â
 
 This repository is designed to help researchers turn physical books into digital documents, and optionally translated versions, so the material is easier to use in their research workflows.
 
+<p align="center">
+  <img
+    src="assets/readme-hero-researcher-cartoon.png"
+    alt="Cartoon researcher converting physical book pages into digital documents"
+    width="500"
+  />
+</p>
+
 ## How it works
 
 1. Point the tool at a folder of page photos (JPG/PNG)
