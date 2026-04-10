@@ -48,4 +48,49 @@ describe("callOpenRouter", () => {
     );
     expect(mockFetch).toHaveBeenCalledTimes(4);
   });
+
+  it("includes reasoning.effort when thinkingEffort is set", async () => {
+    mockFetch.mockResolvedValueOnce(okCompletionResponse('{"value":"ok"}'));
+
+    await callOpenRouter<{ value: string }>({
+      ...options,
+      thinkingEffort: "high",
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.reasoning).toEqual({ effort: "high" });
+  });
+
+  it("omits reasoning when thinkingEffort is not set", async () => {
+    mockFetch.mockResolvedValueOnce(okCompletionResponse('{"value":"ok"}'));
+
+    await callOpenRouter<{ value: string }>(options);
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.reasoning).toBeUndefined();
+  });
+
+  it("omits reasoning when thinkingEffort is none", async () => {
+    mockFetch.mockResolvedValueOnce(okCompletionResponse('{"value":"ok"}'));
+
+    await callOpenRouter<{ value: string }>({
+      ...options,
+      thinkingEffort: "none",
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.reasoning).toBeUndefined();
+  });
+
+  it("passes effort level string directly for low", async () => {
+    mockFetch.mockResolvedValueOnce(okCompletionResponse('{"value":"ok"}'));
+
+    await callOpenRouter<{ value: string }>({
+      ...options,
+      thinkingEffort: "low",
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.reasoning).toEqual({ effort: "low" });
+  });
 });

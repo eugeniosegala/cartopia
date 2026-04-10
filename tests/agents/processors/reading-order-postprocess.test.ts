@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { postprocessReorderedBlocks } from "../../../src/agents/vision/reading-order-postprocess.js";
+import { postprocessReorderedBlocks } from "../../../src/agents/processors/reading-order-postprocess.js";
 import { BlockType } from "../../../src/types.js";
 import { makeBlock } from "../../support/content-factories.js";
 

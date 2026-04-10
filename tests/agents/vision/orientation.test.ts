@@ -119,4 +119,31 @@ describe("normalizePageOrientation", () => {
       normalizePageOrientation(image, "page-004.jpg", "test-key"),
     ).rejects.toThrow("did not recover a portrait image");
   });
+
+  it("passes thinking effort override to the LLM call", async () => {
+    const image = await createImageData(200, 300);
+    mockFetch.mockResolvedValueOnce(
+      okJsonSchemaResponse({ rotationDegrees: "0", confidence: 0.97 }),
+    );
+
+    await normalizePageOrientation(image, "page-005.jpg", "test-key", "high");
+
+    const [, opts] = mockFetch.mock.calls[0];
+    const body = JSON.parse(opts.body);
+    expect(body.reasoning).toEqual({ effort: "high" });
+  });
+
+  it("uses task default thinking effort when no override is given", async () => {
+    const image = await createImageData(200, 300);
+    mockFetch.mockResolvedValueOnce(
+      okJsonSchemaResponse({ rotationDegrees: "0", confidence: 0.97 }),
+    );
+
+    await normalizePageOrientation(image, "page-006.jpg", "test-key");
+
+    const [, opts] = mockFetch.mock.calls[0];
+    const body = JSON.parse(opts.body);
+    // page_orientation default is "medium"
+    expect(body.reasoning).toEqual({ effort: "medium" });
+  });
 });

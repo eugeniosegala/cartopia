@@ -1,26 +1,26 @@
 ## ADDED Requirements
 
 ### Requirement: Thinking effort levels
-The system SHALL support four named thinking effort levels: `none`, `low`, `medium`, and `high`. Each level SHALL map to a concrete thinking token budget used in LLM API calls. The `none` level SHALL disable thinking entirely (no thinking budget sent to the provider).
+The system SHALL support four named thinking effort levels: `none`, `low`, `medium`, and `high`. Each level SHALL be passed directly as a `reasoning.effort` string in the API request body. The `none` level SHALL disable reasoning entirely (no `reasoning` field sent).
 
-#### Scenario: Effort level maps to token budget
+#### Scenario: Effort level included in request
 - **WHEN** an LLM call is made with `thinkingEffort` set to `"medium"`
-- **THEN** the API request body SHALL include the provider-specific thinking budget parameter corresponding to the `medium` level
+- **THEN** the API request body SHALL include `reasoning.effort` set to `"medium"`
 
 #### Scenario: No thinking effort specified
 - **WHEN** an LLM call is made without a `thinkingEffort` value
-- **THEN** the API request body SHALL NOT include any thinking budget parameters, preserving current default behavior
+- **THEN** the API request body SHALL NOT include a `reasoning` field, preserving current default behavior
 
-#### Scenario: None level disables thinking
+#### Scenario: None level disables reasoning
 - **WHEN** an LLM call is made with `thinkingEffort` set to `"none"`
-- **THEN** the API request body SHALL NOT include any thinking budget parameters
+- **THEN** the API request body SHALL NOT include a `reasoning` field
 
 ### Requirement: Per-task default effort levels
 The system SHALL define a default thinking effort level for each LLM-powered pipeline task. The defaults SHALL be:
 - `page-number` detection: `low`
-- `orientation` detection: `low`
+- `orientation` detection: `medium`
 - `figures` detection: `medium`
-- `reading-order` reordering: `medium`
+- `reading-order` reordering: `high`
 - `translation`: `high`
 
 #### Scenario: Task uses its configured default
@@ -51,19 +51,8 @@ The `CompletionOptions` interface SHALL accept an optional `thinkingEffort` fiel
 
 #### Scenario: CompletionOptions accepts thinkingEffort
 - **WHEN** a caller passes `{ thinkingEffort: "high" }` in `CompletionOptions`
-- **THEN** `callOpenRouter` SHALL include the mapped thinking budget in the API request
+- **THEN** `callOpenRouter` SHALL include `reasoning.effort` set to `"high"` in the API request
 
 #### Scenario: callVisionLLM passes effort through
 - **WHEN** `callVisionLLM` is called with `thinkingEffort: "medium"`
 - **THEN** the underlying `callOpenRouter` call SHALL receive `thinkingEffort: "medium"` in its options
-
-### Requirement: Provider-specific parameter mapping
-The thinking effort level SHALL be translated to the current model provider's thinking budget format. For Gemini models via OpenRouter, this SHALL use the `provider.google.thinkingConfig.thinkingBudget` parameter path. The mapping SHALL be centralized in a single location so that changing providers requires modifying only one code path.
-
-#### Scenario: Gemini provider format used
-- **WHEN** an LLM call is made with `thinkingEffort: "high"` using a Gemini model
-- **THEN** the request body SHALL include `provider.google.thinkingConfig.thinkingBudget` set to the `high` level's token budget
-
-#### Scenario: Mapping is centralized
-- **WHEN** the provider changes from Gemini to another model
-- **THEN** only the centralized mapping function SHALL need modification — no call-site changes required

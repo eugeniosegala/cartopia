@@ -9,7 +9,7 @@
     "cartopia": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",

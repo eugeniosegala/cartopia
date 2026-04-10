@@ -1,8 +1,10 @@
 import { READING_ORDER_MAX_PREVIEW_LENGTH } from "../../config/reading-order.js";
+import { resolveThinkingEffort } from "../../config/clients.js";
 import { callVisionLLM } from "../../clients/vision-llm.js";
 import type { ContentBlock } from "../../types/content.js";
 import type { VisionImageSource } from "../../types/image.js";
-import { postprocessReorderedBlocks } from "./reading-order-postprocess.js";
+import type { ThinkingEffort } from "../../types/pipeline.js";
+import { postprocessReorderedBlocks } from "../processors/reading-order-postprocess.js";
 
 const READING_ORDER_PROMPT = `You are analyzing a photographed book page. Your ONLY task is to determine the correct reading order of the content blocks listed below.
 
@@ -56,6 +58,7 @@ export const reorderBlocks = async (
   image: VisionImageSource | string,
   contentBlocks: ContentBlock[],
   apiKey: string,
+  effortOverride?: ThinkingEffort,
 ): Promise<ContentBlock[]> => {
   if (contentBlocks.length <= 1) return contentBlocks;
   const imageSource =
@@ -73,6 +76,7 @@ export const reorderBlocks = async (
     userText,
     "reading_order",
     READING_ORDER_SCHEMA,
+    resolveThinkingEffort("reading_order", effortOverride),
   );
 
   const reordered = isValidOrder(result.order, contentBlocks.length)

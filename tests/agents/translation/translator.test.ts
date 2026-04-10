@@ -204,4 +204,34 @@ describe("translatePages", () => {
     expect(body.temperature).toBe(0);
     expect(request.headers.Authorization).toBe("Bearer test-key");
   });
+
+  it("uses task default thinking effort (high) when no override is given", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okJsonSchemaResponse({ translations: ["EN"] }),
+    );
+
+    await translatePages(
+      [makePage(1, [{ type: BlockType.TEXT, text: "DE" }])],
+      opts,
+    );
+
+    const [, request] = mockFetch.mock.calls[0];
+    const body = JSON.parse(request.body);
+    expect(body.reasoning).toEqual({ effort: "high" });
+  });
+
+  it("passes thinking effort override to translation calls", async () => {
+    mockFetch.mockResolvedValueOnce(
+      okJsonSchemaResponse({ translations: ["EN"] }),
+    );
+
+    await translatePages(
+      [makePage(1, [{ type: BlockType.TEXT, text: "DE" }])],
+      { ...opts, thinkingEffort: "low" },
+    );
+
+    const [, request] = mockFetch.mock.calls[0];
+    const body = JSON.parse(request.body);
+    expect(body.reasoning).toEqual({ effort: "low" });
+  });
 });

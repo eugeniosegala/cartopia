@@ -1,5 +1,7 @@
+import { resolveThinkingEffort } from "../../config/clients.js";
 import { callVisionLLM } from "../../clients/vision-llm.js";
 import type { VisionImageSource } from "../../types/image.js";
+import type { ThinkingEffort } from "../../types/pipeline.js";
 
 const PAGE_NUMBER_PROMPT = `You are analyzing a photographed book page. Your ONLY task is to identify the official printed page number.
 
@@ -29,6 +31,7 @@ const PAGE_NUMBER_SCHEMA = {
 export const detectPageNumber = async (
   image: VisionImageSource,
   apiKey: string,
+  effortOverride?: ThinkingEffort,
 ): Promise<string | null> => {
   const result = await callVisionLLM<{ pageNumber: string | null }>(
     image,
@@ -37,6 +40,7 @@ export const detectPageNumber = async (
     "What is the printed page number on this book page?",
     "page_number",
     PAGE_NUMBER_SCHEMA,
+    resolveThinkingEffort("page_number", effortOverride),
   );
   return result.pageNumber;
 };

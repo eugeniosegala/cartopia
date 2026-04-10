@@ -1,8 +1,10 @@
 import { FIGURE_CROP_MARGIN } from "../../config/image.js";
+import { resolveThinkingEffort } from "../../config/clients.js";
 import type { FigureInfo } from "../../types/vision.js";
 import { callVisionLLM } from "../../clients/vision-llm.js";
 import { cropImageCenter, toVisionImageSource } from "../../utils/image.js";
 import type { ImageData } from "../../types/image.js";
+import type { ThinkingEffort } from "../../types/pipeline.js";
 import {
   clampBoundingBox,
   hasDegenerateBoundingBox,
@@ -76,7 +78,9 @@ const mapFiguresToFullImage = (figures: FigureInfo[]): FigureInfo[] =>
 export const detectFigures = async (
   image: ImageData,
   apiKey: string,
+  effortOverride?: ThinkingEffort,
 ): Promise<FigureInfo[]> => {
+  const effort = resolveThinkingEffort("page_figures", effortOverride);
   const result = await callVisionLLM<{ figures: FigureInfo[] }>(
     toVisionImageSource(image),
     apiKey,
@@ -84,6 +88,7 @@ export const detectFigures = async (
     "Identify all figures on this book page.",
     "page_figures",
     FIGURES_SCHEMA,
+    effort,
   );
 
   const figures = clampFigures(result.figures);
@@ -98,6 +103,7 @@ export const detectFigures = async (
       "Identify all figures on this book page.",
       "page_figures",
       FIGURES_SCHEMA,
+      effort,
     );
     const retryFigures = clampFigures(retryResult.figures);
 

@@ -1,5 +1,6 @@
 import { callOpenRouter } from "./openrouter.js";
 import type { VisionImageSource } from "../types/image.js";
+import type { ThinkingEffort } from "../types/pipeline.js";
 
 export const callVisionLLM = async <T>(
   image: VisionImageSource,
@@ -8,6 +9,7 @@ export const callVisionLLM = async <T>(
   userText: string,
   schemaName: string,
   schema: Record<string, unknown>,
+  thinkingEffort?: ThinkingEffort,
 ): Promise<T> => {
   const { data } = await callOpenRouter<T>({
     apiKey,
@@ -28,6 +30,7 @@ export const callVisionLLM = async <T>(
     ],
     schemaName,
     schema,
+    thinkingEffort,
   });
 
   return data;

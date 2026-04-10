@@ -1,7 +1,9 @@
 import { ORIENTATION_LLM_MIN_CONFIDENCE } from "../../config/image.js";
+import { resolveThinkingEffort } from "../../config/clients.js";
 import { callVisionLLM } from "../../clients/vision-llm.js";
 import { rotateImage, toVisionImageSource } from "../../utils/image.js";
 import type { ImageData } from "../../types/image.js";
+import type { ThinkingEffort } from "../../types/pipeline.js";
 import type { RotationDegrees } from "../../types/vision.js";
 
 const ORIENTATION_PROMPT = `You are analyzing a photographed book page. Your ONLY task is to choose the rotation needed to make the page upright for reading.
@@ -27,6 +29,7 @@ export const normalizePageOrientation = async (
   image: ImageData,
   filePath: string,
   apiKey: string,
+  effortOverride?: ThinkingEffort,
 ): Promise<ImageData> => {
   const isPortrait = image.height > image.width;
 
@@ -40,6 +43,7 @@ export const normalizePageOrientation = async (
     "Choose the clockwise rotation needed to make this photographed book page upright. Return only 0, 90, 180, or 270.",
     "page_orientation",
     ORIENTATION_SCHEMA,
+    resolveThinkingEffort("page_orientation", effortOverride),
   );
   const rotationDegrees = Number(result.rotationDegrees) as RotationDegrees;
 

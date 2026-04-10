@@ -1,5 +1,7 @@
 import type { ProcessedPage } from "../../types/content.js";
+import type { ThinkingEffort } from "../../types/pipeline.js";
 import { callOpenRouter } from "../../clients/openrouter.js";
+import { resolveThinkingEffort } from "../../config/clients.js";
 import { DEFAULT_CONCURRENCY, TRANSLATION_CONTEXT_BLOCKS } from "../../config/pipeline.js";
 import { processWithConcurrency } from "../../utils/concurrency.js";
 import { toErrorMessage } from "../../utils/error.js";
@@ -12,7 +14,6 @@ import {
   splitTranslationChunks,
 } from "./context.js";
 import { hasSuspiciousUntranslatedSpan } from "./detector.js";
-import { mergeCrossPageHyphens } from "./hyphenation.js";
 import {
   buildSystemPrompt,
   buildUserMessage,
@@ -25,12 +26,14 @@ export interface TranslateOptions {
   apiKey: string;
   targetLanguage: string;
   concurrency?: number;
+  thinkingEffort?: ThinkingEffort;
 }
 
 const callTranslationLLM = async (
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
+  thinkingEffort?: ThinkingEffort,
 ): Promise<{ translations: string[] }> => {
   const { data, finishReason } = await callOpenRouter<{
     translations: string[];
@@ -42,6 +45,7 @@ const callTranslationLLM = async (
     ],
     schemaName: "page_translation",
     schema: TRANSLATION_SCHEMA,
+    thinkingEffort: resolveThinkingEffort("page_translation", thinkingEffort),
   });
 
   if (finishReason === "length") {
@@ -72,6 +76,7 @@ const translateBlocksBatch = async (
       options.apiKey,
       systemPrompt,
       userMessage,
+      options.thinkingEffort,
     );
 
     if (result.translations.length !== texts.length) {
@@ -108,7 +113,6 @@ export const translatePages = async (
   options: TranslateOptions,
 ): Promise<ProcessedPage[]> => {
   const clonedPages = pages.map(clonePage);
-  mergeCrossPageHyphens(clonedPages);
 
   // Precompute context for each page from the original (untranslated) pages.
   // If the immediate neighbour has no text (e.g., full-page figure),

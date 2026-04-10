@@ -1,5 +1,7 @@
 export type SortOrder = "name" | "date";
 
+export type ThinkingEffort = "none" | "low" | "medium" | "high";
+
 export interface PipelineConfig {
   inputDir: string;
   outputPath: string;
@@ -8,5 +10,6 @@ export interface PipelineConfig {
   sortOrder: SortOrder;
   maxPages?: number;
   translateLanguage?: string;
+  thinkingEffort?: ThinkingEffort;
   verbose: boolean;
 }

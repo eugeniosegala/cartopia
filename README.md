@@ -52,22 +52,22 @@ F --> G
 G --> H["Crop figures and attach captions"]
 H --> I["Fix reading order
 and deduplicate caption text"]
-I --> J["Structured processed pages"]
+I --> J["Repair cross-page hyphen splits"]
+J --> K["Structured processed pages"]
 
-J --> K["Build original Word document"]
-K --> L["📄 output.docx"]
+K --> L["Build Word document"]
+L --> M["📄 output.docx"]
 
-J --> M{"Translate?"}
-M -- Yes --> N["Clone pages and repair
-cross-page hyphen splits"]
-N --> O["Translate text blocks in batches
+K --> N{"Translate?"}
+N -- Yes --> O["Clone pages"]
+O --> P["Translate text blocks in batches
 with neighboring-page context"]
-O --> P["Build translated Word document"]
-P --> Q["📄 output.<lang>.docx"]
+P --> Q["Build translated Word document"]
+Q --> R["📄 output.lang.docx"]
 
-M -- No --> R(("Done"))
-L --> R
-Q --> R
+N -- No --> S(("Done"))
+M --> S
+R --> S
 
 ```
 

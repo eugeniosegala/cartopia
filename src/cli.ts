@@ -4,7 +4,7 @@ import "dotenv/config";
 import { Command, InvalidArgumentError } from "commander";
 import { DEFAULT_CONCURRENCY } from "./config/pipeline.js";
 import { processBook } from "./pipeline.js";
-import type { SortOrder } from "./types/pipeline.js";
+import type { SortOrder, ThinkingEffort } from "./types/pipeline.js";
 import { toErrorMessage } from "./utils/error.js";
 import * as log from "./utils/logger.js";
 
@@ -15,6 +15,7 @@ interface CliOptions {
   sort: SortOrder;
   maxPages?: number;
   translate?: string;
+  thinkingEffort?: ThinkingEffort;
   verbose: boolean;
 }
 
@@ -34,6 +35,18 @@ const parseSortOrder = (value: string): SortOrder => {
   }
 
   throw new InvalidArgumentError("must be one of: name, date");
+};
+
+const VALID_THINKING_EFFORTS = ["none", "low", "medium", "high"] as const;
+
+const parseThinkingEffort = (value: string): ThinkingEffort => {
+  if (VALID_THINKING_EFFORTS.includes(value as ThinkingEffort)) {
+    return value as ThinkingEffort;
+  }
+
+  throw new InvalidArgumentError(
+    `must be one of: ${VALID_THINKING_EFFORTS.join(", ")}`,
+  );
 };
 
 const program = new Command();
@@ -67,6 +80,11 @@ program
     "-t, --translate <language>",
     "Translate to target language (e.g., en, English)",
   )
+  .option(
+    "--thinking-effort <level>",
+    "LLM thinking effort: none, low, medium, high",
+    parseThinkingEffort,
+  )
   .option("-v, --verbose", "Enable verbose logging", false)
   .action(async (inputDir: string, opts: CliOptions) => {
     try {
@@ -78,6 +96,7 @@ program
         sortOrder: opts.sort,
         maxPages: opts.maxPages,
         translateLanguage: opts.translate,
+        thinkingEffort: opts.thinkingEffort,
         verbose: opts.verbose,
       });
     } catch (err) {

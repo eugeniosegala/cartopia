@@ -30,31 +30,15 @@ The `CompletionOptions` interface already has an unused `maxTokens` field, estab
 - Raw token numbers: More precise but fragile across model changes and opaque to users.
 - Boolean on/off: Too coarse — the gap between "no thinking" and "full thinking" is large.
 
-### 2. Centralized effort-to-budget mapping in config
-
-**Decision**: Store the `ThinkingEffort → number` mapping as a config constant in `src/config/clients.ts`. The mapping translates named levels to provider-specific thinking token budgets.
-
-```
-none → 0 (or omitted — disables thinking entirely)
-low → 1024
-medium → 4096
-high → 16384
-```
-
-**Rationale**: Single place to tune when the model changes or when empirical testing reveals better budget values. Keeps `callOpenRouter` clean — it just does a lookup.
-
-**Alternatives considered**:
-- Per-task custom budgets: Over-engineers the initial implementation. Named levels cover the 80% case; raw `maxTokens` already exists for edge cases.
-
-### 3. Per-task defaults in a dedicated config map
+### 2. Per-task defaults in a dedicated config map
 
 **Decision**: Add a `TASK_THINKING_EFFORT` record in `src/config/clients.ts` mapping task identifiers to default effort levels:
 
 ```
 page-number    → "low"
-orientation    → "low"
+orientation    → "medium"
 figures        → "medium"
-reading-order  → "medium"
+reading-order  → "high"
 translation    → "high"
 ```
 
@@ -63,6 +47,7 @@ translation    → "high"
 **Alternatives considered**:
 - Distribute defaults into each task's own config file: Matches the pattern for `ORIENTATION_LLM_MIN_CONFIDENCE`, but scatters related config across 5+ files making tuning harder.
 - No defaults (always require explicit): Breaks the current zero-config experience.
+- Centralized effort-to-budget mapping (`ThinkingEffort → number`): Rejected in favour of passing the effort level string directly via `reasoning.effort`, which is simpler and provider-agnostic.
 
 ### 4. Extend CompletionOptions with optional thinkingEffort
 
@@ -70,28 +55,20 @@ translation    → "high"
 
 **Rationale**: Optional field means zero changes required for callers that don't care about thinking effort. The `callVisionLLM` wrapper gains a matching optional parameter and passes it through.
 
-### 5. Provider-specific parameter injection in callOpenRouter
+### 5. Pass effort level directly via reasoning.effort
 
-**Decision**: `callOpenRouter` translates the effort level to Gemini's thinking budget format via OpenRouter's provider passthrough:
+**Decision**: `callOpenRouter` passes the effort level string directly in the request body as `reasoning.effort`:
 
 ```json
-{
-  "provider": {
-    "google": {
-      "thinkingConfig": {
-        "thinkingBudget": <mapped-token-count>
-      }
-    }
-  }
-}
+{ "reasoning": { "effort": "high" } }
 ```
 
-When `thinkingEffort` is `"none"` or the mapped budget is 0, omit the provider block entirely.
+When `thinkingEffort` is `"none"` or unset, the `reasoning` field is omitted entirely.
 
-**Rationale**: OpenRouter's provider passthrough is the documented way to send model-specific parameters. This keeps the main request body clean and makes switching providers a config-only change (update the mapping function).
+**Rationale**: Provider-agnostic — no Gemini-specific mapping needed. The effort level names (`low`, `medium`, `high`) are passed as-is. Switching models requires no code changes as long as the provider supports OpenRouter's `reasoning` field.
 
 **Alternatives considered**:
-- Use OpenRouter's generic `reasoning_effort` field: Not all models support it; provider passthrough is more reliable for Gemini specifically.
+- Gemini-specific `provider.google.thinkingConfig.thinkingBudget` with token-count mapping: More precise but couples the code to one provider and requires maintaining a budget lookup table.
 
 ### 6. CLI flag with global override semantics
 
@@ -105,7 +82,6 @@ When `thinkingEffort` is `"none"` or the mapped budget is 0, omit the provider b
 
 ## Risks / Trade-offs
 
-- **[Budget values are empirical guesses]** → The initial `low=1024 / medium=4096 / high=16384` values are starting points. Mitigated by centralizing them in one config constant — easy to tune after real-world testing.
-- **[Provider lock-in in the mapping]** → The Gemini-specific `provider.google.thinkingConfig` format ties the mapping to one provider. Mitigated by isolating the mapping to a single function in `callOpenRouter` — switching providers means changing one code path.
 - **[Global CLI override is coarse]** → `--thinking-effort low` sets all tasks to low, even translation which benefits from high effort. Mitigated by this being opt-in; the per-task defaults are the recommended path.
-- **[Thinking tokens add cost]** → Higher effort levels increase token usage and API cost. Mitigated by defaulting simple tasks to `low`/`none` and only using `high` for translation.
+- **[Thinking tokens add cost]** → Higher effort levels increase token usage and API cost. Mitigated by defaulting simple tasks to `low` and only using `high` for complex tasks.
+- **[Provider support varies]** → Not all models behind OpenRouter may honour `reasoning.effort`. Mitigated by graceful degradation — the field is simply ignored by models that don't support it.

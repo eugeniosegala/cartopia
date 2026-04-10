@@ -4,6 +4,7 @@ import {
   OPENROUTER_MAX_RETRIES,
   OPENROUTER_RETRY_DELAYS,
 } from "../config/clients.js";
+import type { ThinkingEffort } from "../types/pipeline.js";
 import { toErrorMessage } from "../utils/error.js";
 import * as log from "../utils/logger.js";
 
@@ -18,6 +19,7 @@ export interface CompletionOptions {
   schemaName: string;
   schema: Record<string, unknown>;
   maxTokens?: number;
+  thinkingEffort?: ThinkingEffort;
 }
 
 export interface CompletionResult<T> {
@@ -40,6 +42,13 @@ const JSON_CODE_BLOCK_REGEX = /^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$/i;
 
 const unwrapStructuredContent = (content: string): string =>
   content.match(JSON_CODE_BLOCK_REGEX)?.[1] ?? content;
+
+const buildReasoning = (
+  effort?: ThinkingEffort,
+): { effort: string } | undefined => {
+  if (!effort || effort === "none") return undefined;
+  return { effort };
+};
 
 const parseStructuredContent = <T>(
   schemaName: string,
@@ -86,6 +95,10 @@ export const callOpenRouter = async <T>(
           },
           temperature: 0,
           ...(options.maxTokens && { max_tokens: options.maxTokens }),
+          ...(() => {
+            const reasoning = buildReasoning(options.thinkingEffort);
+            return reasoning ? { reasoning } : {};
+          })(),
         }),
       });
 
